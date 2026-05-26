@@ -1,4 +1,18 @@
-const MAX_PNG_BYTES = 4.9 * 1024 * 1024;
+const DEFAULT_IMAGE_QUALITY = "high";
+const IMAGE_QUALITY_PRESETS = {
+  low: {
+    maxLongEdge: 1280,
+    maxPngBytes: 5 * 1024 * 1024
+  },
+  normal: {
+    maxLongEdge: 2560,
+    maxPngBytes: 12 * 1024 * 1024
+  },
+  high: {
+    maxLongEdge: Infinity,
+    maxPngBytes: 20 * 1024 * 1024
+  }
+};
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || message.type !== "copy-image") {
@@ -19,7 +33,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 async function copyImage(message) {
   const sourceBlob = await loadImageBlob(message);
-  const image = await convertImage(sourceBlob);
+  const image = await convertImage(sourceBlob, message.imageQuality);
 
   await writeImageToClipboard(image);
 
@@ -59,7 +73,7 @@ async function loadImageBlob(message) {
   throw new Error("No image payload was provided.");
 }
 
-async function convertImage(blob) {
+async function convertImage(blob, imageQuality) {
   if (!blob.type.startsWith("image/")) {
     throw new Error(`Payload is not an image: ${blob.type || "unknown"}`);
   }
@@ -75,19 +89,23 @@ async function convertImage(blob) {
   context.drawImage(bitmap, 0, 0);
   bitmap.close();
 
-  const pngBlob = await createSizedPngBlob(canvas);
+  const pngBlob = await createSizedPngBlob(canvas, getImageQualityPreset(imageQuality));
 
   return {
     pngBlob
   };
 }
 
-async function createSizedPngBlob(canvas) {
-  let currentCanvas = canvas;
+function getImageQualityPreset(value) {
+  return IMAGE_QUALITY_PRESETS[value] || IMAGE_QUALITY_PRESETS[DEFAULT_IMAGE_QUALITY];
+}
+
+async function createSizedPngBlob(canvas, preset) {
+  let currentCanvas = resizeToMaxLongEdge(canvas, preset.maxLongEdge);
   let pngBlob = await canvasToPngBlob(currentCanvas);
 
-  while (pngBlob.size > MAX_PNG_BYTES && currentCanvas.width > 1 && currentCanvas.height > 1) {
-    const scale = Math.min(0.9, Math.sqrt(MAX_PNG_BYTES / pngBlob.size) * 0.95);
+  while (pngBlob.size > preset.maxPngBytes && currentCanvas.width > 1 && currentCanvas.height > 1) {
+    const scale = Math.min(0.9, Math.sqrt(preset.maxPngBytes / pngBlob.size) * 0.95);
     const width = Math.max(1, Math.floor(currentCanvas.width * scale));
     const height = Math.max(1, Math.floor(currentCanvas.height * scale));
 
@@ -99,7 +117,7 @@ async function createSizedPngBlob(canvas) {
     pngBlob = await canvasToPngBlob(currentCanvas);
   }
 
-  if (pngBlob.size > MAX_PNG_BYTES) {
+  if (pngBlob.size > preset.maxPngBytes) {
     throw new Error(`PNG is too large after resize: ${pngBlob.size}`);
   }
 
@@ -126,4 +144,18 @@ function resizeCanvas(sourceCanvas, width, height) {
   context.drawImage(sourceCanvas, 0, 0, width, height);
 
   return canvas;
+}
+
+function resizeToMaxLongEdge(canvas, maxLongEdge) {
+  const longEdge = Math.max(canvas.width, canvas.height);
+  if (!Number.isFinite(maxLongEdge) || longEdge <= maxLongEdge) {
+    return canvas;
+  }
+
+  const scale = maxLongEdge / longEdge;
+  return resizeCanvas(
+    canvas,
+    Math.max(1, Math.floor(canvas.width * scale)),
+    Math.max(1, Math.floor(canvas.height * scale))
+  );
 }
