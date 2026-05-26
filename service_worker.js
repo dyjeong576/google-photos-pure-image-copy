@@ -112,9 +112,10 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 
   setBadge(tab && tab.id, "...", "#5f6368");
 
-  copyImageFromMenu(info, tab).catch((error) => {
+  copyImageFromMenu(info, tab).catch(async (error) => {
     console.error(error);
     setBadge(tab && tab.id, "FAIL", "#c5221f");
+    await showCopyStatus(tab && tab.id, await getLanguage().catch(() => I18N.defaultLanguage), "copyStatusFailed", "failed");
   });
 });
 
@@ -130,12 +131,15 @@ async function copyImageFromMenu(info, tab) {
   }
 
   const imageQuality = await getImageQuality();
+  const language = await getLanguage();
+  await showCopyStatus(tabId, language, "copyStatusProgress", "progress");
 
   try {
     await focusTab(tab);
     await copyViaInjectedScript(tabId, info.srcUrl, imageQuality);
 
     setBadge(tabId, "OK", "#188038");
+    await showCopyStatus(tabId, language, "copyStatusSuccess", "success");
   } catch (error) {
     if (error.fallbackDataUrl) {
       try {
@@ -147,12 +151,14 @@ async function copyImageFromMenu(info, tab) {
       }
 
       setBadge(tabId, "OK", "#188038");
+      await showCopyStatus(tabId, language, "copyStatusSuccess", "success");
       return;
     }
 
     if (info.srcUrl.startsWith("data:image/")) {
       await copyViaOffscreen({ dataUrl: info.srcUrl, imageQuality });
       setBadge(tabId, "OK", "#188038");
+      await showCopyStatus(tabId, language, "copyStatusSuccess", "success");
       return;
     }
 
@@ -160,6 +166,7 @@ async function copyImageFromMenu(info, tab) {
       const dataUrl = await fetchImageAsDataUrl(info.srcUrl);
       await copyViaOffscreen({ dataUrl, imageQuality });
       setBadge(tabId, "OK", "#188038");
+      await showCopyStatus(tabId, language, "copyStatusSuccess", "success");
       return;
     }
 
@@ -231,6 +238,70 @@ async function isAllowedPage(url) {
 function t(language, key) {
   const messages = I18N.messages[language] || I18N.messages[I18N.defaultLanguage];
   return messages[key] || I18N.messages[I18N.defaultLanguage][key] || key;
+}
+
+async function showCopyStatus(tabId, language, messageKey, status) {
+  if (!tabId) {
+    return;
+  }
+
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      func: renderCopyStatusToast,
+      args: [t(language, messageKey), status]
+    });
+  } catch {
+  }
+}
+
+function renderCopyStatusToast(message, status) {
+  const toastId = "pure-image-copy-status-toast";
+  let toast = document.getElementById(toastId);
+
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = toastId;
+    toast.setAttribute("role", "status");
+    toast.setAttribute("aria-live", "polite");
+    (document.body || document.documentElement).append(toast);
+  }
+
+  if (window.__pureImageCopyToastTimer) {
+    clearTimeout(window.__pureImageCopyToastTimer);
+  }
+
+  const colors = {
+    progress: ["#1d4ed8", "#eff6ff", "#bfdbfe"],
+    success: ["#166534", "#f0fdf4", "#bbf7d0"],
+    failed: ["#b42318", "#fef2f2", "#fecaca"]
+  };
+  const [color, background, borderColor] = colors[status] || colors.progress;
+
+  toast.textContent = message;
+  Object.assign(toast.style, {
+    position: "fixed",
+    top: "16px",
+    right: "16px",
+    zIndex: "2147483647",
+    boxSizing: "border-box",
+    maxWidth: "min(320px, calc(100vw - 32px))",
+    padding: "11px 14px",
+    border: `1px solid ${borderColor}`,
+    borderRadius: "9px",
+    background,
+    color,
+    font: "600 14px/1.4 system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+    boxShadow: "0 12px 28px rgba(15, 23, 42, 0.16)",
+    pointerEvents: "none"
+  });
+
+  if (status !== "progress") {
+    window.__pureImageCopyToastTimer = setTimeout(() => {
+      toast.remove();
+      window.__pureImageCopyToastTimer = null;
+    }, status === "success" ? 1800 : 3500);
+  }
 }
 
 function getHostPatterns(host) {

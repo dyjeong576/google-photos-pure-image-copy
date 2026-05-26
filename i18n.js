@@ -35,7 +35,10 @@ globalThis.I18N = {
       removed: "Removed.",
       urlRequired: "Enter a URL.",
       invalidUrl: "Enter a valid URL.",
-      unsupportedProtocol: "Only http or https URLs can be added."
+      unsupportedProtocol: "Only http or https URLs can be added.",
+      copyStatusProgress: "Copying image...",
+      copyStatusSuccess: "Image copied.",
+      copyStatusFailed: "Image copy failed."
     },
     ko: {
       pageTitle: "Pure Image Copy 설정",
@@ -64,7 +67,10 @@ globalThis.I18N = {
       removed: "삭제했습니다.",
       urlRequired: "URL을 입력해 주세요.",
       invalidUrl: "올바른 URL을 입력해 주세요.",
-      unsupportedProtocol: "http 또는 https URL만 추가할 수 있습니다."
+      unsupportedProtocol: "http 또는 https URL만 추가할 수 있습니다.",
+      copyStatusProgress: "복사 중...",
+      copyStatusSuccess: "복사 완료",
+      copyStatusFailed: "복사 실패"
     },
     "zh-CN": {
       pageTitle: "Pure Image Copy 设置",
@@ -93,7 +99,10 @@ globalThis.I18N = {
       removed: "已删除。",
       urlRequired: "请输入 URL。",
       invalidUrl: "请输入有效的 URL。",
-      unsupportedProtocol: "只能添加 http 或 https URL。"
+      unsupportedProtocol: "只能添加 http 或 https URL。",
+      copyStatusProgress: "正在复制图像...",
+      copyStatusSuccess: "图像已复制。",
+      copyStatusFailed: "图像复制失败。"
     },
     ja: {
       pageTitle: "Pure Image Copy 設定",
@@ -122,7 +131,10 @@ globalThis.I18N = {
       removed: "削除しました。",
       urlRequired: "URL を入力してください。",
       invalidUrl: "有効な URL を入力してください。",
-      unsupportedProtocol: "追加できるのは http または https URL のみです。"
+      unsupportedProtocol: "追加できるのは http または https URL のみです。",
+      copyStatusProgress: "コピー中...",
+      copyStatusSuccess: "コピー完了",
+      copyStatusFailed: "コピー失敗"
     },
     es: {
       pageTitle: "Configuracion de Pure Image Copy",
@@ -151,7 +163,10 @@ globalThis.I18N = {
       removed: "Eliminado.",
       urlRequired: "Ingresa una URL.",
       invalidUrl: "Ingresa una URL valida.",
-      unsupportedProtocol: "Solo se pueden agregar URL http o https."
+      unsupportedProtocol: "Solo se pueden agregar URL http o https.",
+      copyStatusProgress: "Copiando imagen...",
+      copyStatusSuccess: "Imagen copiada.",
+      copyStatusFailed: "Error al copiar la imagen."
     }
   }
 };
