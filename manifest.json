@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Pure Image Copy",
   "version": "0.1.0",
-  "description": "Copy Google Photos images to the clipboard as plain PNG image data.",
+  "description": "Copy supported web images to the clipboard as plain PNG image data.",
   "permissions": [
     "activeTab",
     "clipboardWrite",
